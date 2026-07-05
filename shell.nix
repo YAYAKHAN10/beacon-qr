@@ -14,6 +14,7 @@ pkgs.mkShell {
     bun
     nodejs_24
 
+    lefthook
     git
   ];
 
@@ -21,6 +22,11 @@ pkgs.mkShell {
     # Prefer project-local binaries (eslint, wrangler, ...).
     export PATH="$PWD/node_modules/.bin:$PATH"
     export NEXT_TELEMETRY_DISABLED=1
+
+    # Install git hooks on entry; harmless to re-run.
+    if command -v lefthook >/dev/null 2>&1; then
+      lefthook install >/dev/null 2>&1 || true
+    fi
 
     echo "beacon-qr dev shell — bun $(bun --version), node $(node --version)"
   '';
