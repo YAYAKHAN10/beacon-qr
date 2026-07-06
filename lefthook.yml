@@ -1,0 +1,17 @@
+# Local quality gate, installed automatically when you enter the nix dev
+# shell (`lefthook install` in shell.nix). Bypass in an emergency with
+# `--no-verify`.
+
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{js,jsx,mjs,cjs}"
+      run: bunx eslint --no-warn-ignored {staged_files}
+
+pre-push:
+  commands:
+    build:
+      # </dev/null: next build probes stdin for a TTY and crashes with
+      # `setRawMode EBADF` on the closed descriptor git hooks run under.
+      run: bun run build </dev/null

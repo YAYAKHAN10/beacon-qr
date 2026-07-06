@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import { getSiteUrl } from "@/lib/beacon";
+import { filenameFor } from "@/lib/beacon";
 import { QR_IMAGE_OPTIONS, scanUrlFor } from "@/lib/qr";
 import { getSupabase } from "@/lib/supabase";
 import PrintButton from "./PrintButton";
@@ -67,6 +68,16 @@ export default async function PrintPage({ searchParams }) {
           <article className="qr-card" key={code.id}>
             <img src={code.image} alt={`QR code ${code.id}`} />
             <p>{code.label || code.id}</p>
+            {/* High-res PNG comes from /api/qr/[id] on demand — baking
+                high-res data URLs into this page blew the Worker's
+                per-request CPU limit (Cloudflare error 1102). */}
+            <a
+              className="qr-download"
+              href={`/api/qr/${code.id}`}
+              download={filenameFor(code)}
+            >
+              Download PNG
+            </a>
           </article>
         ))}
       </section>
