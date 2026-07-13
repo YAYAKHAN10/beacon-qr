@@ -1,15 +1,18 @@
-/* eslint-disable @next/next/no-img-element */
-import QRCode from "qrcode";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import { getSiteUrl } from "@/lib/beacon";
 import { filenameFor } from "@/lib/beacon";
-import { QR_IMAGE_OPTIONS, scanUrlFor } from "@/lib/qr";
+import { scanUrlFor } from "@/lib/qr";
 import { getSupabase } from "@/lib/supabase";
 import PrintButton from "./PrintButton";
+import QrImage from "./QrImage";
 
 export const dynamic = "force-dynamic";
 
+// The worker does ONE Supabase select here and encodes nothing — every QR on
+// the sheet is rendered client-side by <QrImage> (see QrImage.js). The old
+// in-request QRCode.toDataURL loop was O(N) CPU in a single invocation and
+// threw Cloudflare 1102 resource-limit errors on big sheets.
 async function getPrintableCodes(ids) {
   let query = getSupabase()
     .from("qr_codes")
@@ -26,14 +29,7 @@ async function getPrintableCodes(ids) {
     throw new Error(error.message);
   }
 
-  const baseUrl = getSiteUrl();
-  return Promise.all(
-    (data || []).map(async (code) => ({
-      id: code.id,
-      label: code.label,
-      image: await QRCode.toDataURL(scanUrlFor(baseUrl, code.id), QR_IMAGE_OPTIONS),
-    }))
-  );
+  return data || [];
 }
 
 export default async function PrintPage({ searchParams }) {
@@ -47,6 +43,7 @@ export default async function PrintPage({ searchParams }) {
         .filter(Boolean)
     : null;
   const codes = await getPrintableCodes(ids);
+  const baseUrl = getSiteUrl();
 
   return (
     <main className="shell print-shell">
@@ -66,7 +63,10 @@ export default async function PrintPage({ searchParams }) {
       <section className="print-grid">
         {codes.map((code) => (
           <article className="qr-card" key={code.id}>
-            <img src={code.image} alt={`QR code ${code.id}`} />
+            <QrImage
+              value={scanUrlFor(baseUrl, code.id)}
+              alt={`QR code ${code.id}`}
+            />
             <p>{code.label || code.id}</p>
             {/* High-res PNG comes from /api/qr/[id] on demand — baking
                 high-res data URLs into this page blew the Worker's

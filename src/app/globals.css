@@ -600,6 +600,17 @@ input[type="checkbox"] {
   height: auto;
 }
 
+/* Placeholder while <QrImage> encodes in the browser — same footprint as the
+   final image so the grid doesn't reflow. */
+.qr-pending {
+  width: 100%;
+  max-width: 190px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: #eef3f2;
+}
+
 .qr-card p {
   margin: 0.35rem 0 0;
   font-weight: 800;
