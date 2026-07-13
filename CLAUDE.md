@@ -18,15 +18,20 @@ preview/download (`QrModal`), programming (`ProgramModal`), delete confirms
 (`ConfirmDialog`), toasts, code labels, and selective printing
 (`/print?ids=a,b,c`). QR generation is centralized in `src/lib/qr.js` +
 `/api/qr/[id]` (1024px PNG, named attachment via `filenameFor` — label-based
-filenames like `eclayers-bakery-1.png`).
+filenames like `eclayers-bakery-1.png`). Bulk code creation
+(`generateCodes`, `src/lib/actions.js`) uses upsert-ignore-duplicates with a
+bounded shortfall top-up — an id collision never re-inserts the whole batch.
 
 ## Architecture notes that will bite you
 
 - **NEVER batch-render QR PNGs into one request.** Twenty 1024px encodes on
   /print threw Cloudflare **1102 resource-limit errors** that also broke
   concurrent scans (free-plan ~10ms CPU/request). Every QR image is served
-  one-per-request by `/api/qr/[id]`; the print sheet's grid uses small 320px
-  data URLs only.
+  one-per-request by `/api/qr/[id]`; the print sheet's grid renders
+  **client-side** (`src/app/print/QrImage.js`, since 2026-07-13) — the worker
+  does ONE Supabase select for `/print` and encodes nothing, so sheet size
+  can't hit CPU limits at all. (The previous 320px server-side data-URL loop
+  was still O(N) CPU and crashed on hundreds of codes.)
 - **The scan path is the hot path** (`src/app/r/[id]/page.js`): one DB read,
   then redirect. Request data (headers, geo) is read up front and only the
   scans insert is deferred via next's `after()` — request APIs are not
