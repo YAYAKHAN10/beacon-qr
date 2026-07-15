@@ -46,9 +46,20 @@ async function compositeWithLogo(qrDataUrl, size) {
   const inner = plate - padding * 2;
   const origin = (size - plate) / 2;
 
+  // Contain-fit rather than stretch — the logo isn't perfectly square, and
+  // stretching it to fit would distort it.
+  const logoScale = Math.min(
+    inner / logoImg.naturalWidth,
+    inner / logoImg.naturalHeight
+  );
+  const logoW = logoImg.naturalWidth * logoScale;
+  const logoH = logoImg.naturalHeight * logoScale;
+  const logoX = origin + padding + (inner - logoW) / 2;
+  const logoY = origin + padding + (inner - logoH) / 2;
+
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(origin, origin, plate, plate);
-  ctx.drawImage(logoImg, origin + padding, origin + padding, inner, inner);
+  ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
 
   return canvas.toDataURL("image/png");
 }
